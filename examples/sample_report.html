@@ -1,0 +1,61 @@
+<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width, initial-scale=1'><title>dashml v0.3 audit -- fraud detection (temporal + grouped)</title><style>
+:root {
+  --bg: #fafafa; --fg: #1a1a1a; --muted: #6b6b6b; --border: #e5e5e5;
+  --critical: #b91c1c; --critical-bg: #fef2f2;
+  --warning: #b45309; --warning-bg: #fffbeb;
+  --info: #1d4ed8; --info-bg: #eff6ff;
+  --good: #15803d; --good-bg: #f0fdf4;
+}
+* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  background: var(--bg); color: var(--fg); margin: 0; padding: 32px;
+  line-height: 1.5; max-width: 920px; margin: 0 auto; }
+h1 { margin: 0 0 4px; font-size: 28px; }
+h2 { margin: 32px 0 12px; font-size: 18px; border-bottom: 1px solid var(--border); padding-bottom: 6px; }
+h3 { margin: 0 0 4px; font-size: 15px; }
+.meta { color: var(--muted); font-size: 13px; margin-bottom: 24px; }
+.summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 16px 0 8px; }
+.summary .card { background: white; border: 1px solid var(--border); border-radius: 8px;
+  padding: 16px; text-align: center; }
+.summary .card .num { font-size: 28px; font-weight: 600; }
+.summary .card .lbl { font-size: 12px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.summary .critical .num { color: var(--critical); }
+.summary .warning .num { color: var(--warning); }
+.summary .info .num { color: var(--info); }
+.banner { padding: 12px 16px; border-radius: 8px; margin: 16px 0;
+  font-size: 14px; font-weight: 500; }
+.banner.fail { background: var(--critical-bg); color: var(--critical); border: 1px solid #fecaca; }
+.banner.pass { background: var(--good-bg); color: var(--good); border: 1px solid #bbf7d0; }
+.metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.metrics .col { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; }
+.metrics .col h3 { font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+.metrics table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.metrics td { padding: 4px 0; }
+.metrics td.k { color: var(--muted); }
+.metrics td.v { text-align: right; font-variant-numeric: tabular-nums; font-weight: 500; }
+.delta { font-size: 13px; color: var(--muted); margin-top: 8px; }
+.delta b { color: var(--fg); }
+.finding { background: white; border: 1px solid var(--border); border-left-width: 4px;
+  border-radius: 6px; padding: 14px 16px; margin: 10px 0; }
+.finding.critical { border-left-color: var(--critical); }
+.finding.warning  { border-left-color: var(--warning); }
+.finding.info     { border-left-color: var(--info); }
+.finding .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 6px; }
+.finding .code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+.finding .badge { font-size: 11px; font-weight: 700; text-transform: uppercase;
+  padding: 2px 8px; border-radius: 999px; letter-spacing: 0.05em; }
+.finding.critical .badge { background: var(--critical-bg); color: var(--critical); }
+.finding.warning  .badge { background: var(--warning-bg); color: var(--warning); }
+.finding.info     .badge { background: var(--info-bg); color: var(--info); }
+.finding .what, .finding .fix, .finding .cols { font-size: 14px; margin: 6px 0; }
+.finding .label { color: var(--muted); font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.05em; margin-right: 6px; }
+.finding code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 12px; background: #f3f4f6; padding: 1px 5px; border-radius: 3px; }
+.empty { color: var(--muted); font-style: italic; padding: 24px; text-align: center;
+  background: white; border: 1px dashed var(--border); border-radius: 8px; }
+footer { margin-top: 40px; color: var(--muted); font-size: 12px; text-align: center;
+  border-top: 1px solid var(--border); padding-top: 12px; }
+@media print { body { background: white; padding: 16px; } .finding, .summary .card,
+  .metrics .col { break-inside: avoid; } }
+</style></head><body><h1>dashml v0.3 audit -- fraud detection (temporal + grouped)</h1><div class='meta'>dataset: <b>Synthetic transactions, 8,000 rows / 600 users / 90 days</b> &middot; dashml v0.3.0</div><div class="banner fail">FAIL -- critical issues must be resolved before training.</div><h2>Summary</h2><div class='summary'><div class='card critical'><div class='num'>3</div><div class='lbl'>critical</div></div><div class='card warning'><div class='num'>1</div><div class='lbl'>warning</div></div><div class='card info'><div class='num'>0</div><div class='lbl'>info</div></div></div><h2>Performance: before vs after dashml</h2><div class="metrics"><div class="col"><h3>Before (naive)</h3><table><tr><td class="k">accuracy</td><td class="v">0.8717</td></tr><tr><td class="k">f1</td><td class="v">0.6805</td></tr><tr><td class="k">roc_auc</td><td class="v">0.9065</td></tr></table></div><div class="col"><h3>After (dashml-cleaned)</h3><table><tr><td class="k">accuracy</td><td class="v">0.8495</td></tr><tr><td class="k">f1</td><td class="v">0.6569</td></tr><tr><td class="k">roc_auc</td><td class="v">0.8959</td></tr></table></div></div><div class="delta"><b>accuracy</b>: 0.8717 -> 0.8495 (-0.0222) &nbsp;|&nbsp; <b>f1</b>: 0.6805 -> 0.6569 (-0.0236) &nbsp;|&nbsp; <b>roc_auc</b>: 0.9065 -> 0.8959 (-0.0106)</div><h2>Findings</h2><div class="finding critical"><div class="head"><h3><span class="code">TL011</span> &middot; Temporal leakage</h3><span class="badge">critical</span></div><div class="what"><span class="label">what</span>Test rows include timestamps at or before the latest train timestamp. The model sees the future during training, then evaluates on the past -- production accuracy will be much worse.</div><div class="what"><span class="label">detail</span>2400 of 2400 test rows (100.00%) have timestamps at or before the latest train timestamp. train: [2024-01-01 00:00:00 -&gt; 2024-03-31 00:00:00]; test:  [2024-01-01 00:00:00 -&gt; 2024-03-31 00:00:00]</div><div class="fix"><span class="label">fix</span>Split chronologically: every test timestamp must be strictly greater than every train timestamp. Use TimeSeriesSplit or sort by time before splitting.</div></div><div class="finding critical"><div class="head"><h3><span class="code">TL012</span> &middot; Group leakage</h3><span class="badge">critical</span></div><div class="what"><span class="label">what</span>The same group identifier (user_id, session_id, patient_id) appears in both train and test splits. Cross-validation overstates accuracy because the model has seen this entity.</div><div class="what"><span class="label">detail</span>589 group IDs appear in both train and test (2400 test rows, 100.00% of test). Sample overlapping groups: [&#39;0&#39;, &#39;1&#39;, &#39;2&#39;, &#39;3&#39;, &#39;4&#39;, &#39;5&#39;, &#39;6&#39;, &#39;7&#39;, &#39;8&#39;, &#39;9&#39;].</div><div class="fix"><span class="label">fix</span>Group leakage: the same entity (user / patient / session) is in train AND test. Cross-validation will overstate accuracy. Use sklearn.model_selection.GroupKFold or split by the entity ID, not by row.</div></div><div class="finding critical"><div class="head"><h3><span class="code">TL013</span> &middot; Preprocessing fit-on-full-data leakage</h3><span class="badge">critical</span></div><div class="what"><span class="label">what</span>The pipeline produces different transform() outputs for X_test depending on whether it was fit on the training subset or the full dataset. This means scaler / imputer / encoder state depends on test rows -- silent leakage.</div><div class="what"><span class="label">detail</span>Pipeline output for X_test differs by 0.831279 between (fit on train) and (fit on full data). The pipeline has data-dependent state -- if fit on the full dataset, test information leaks into the model.</div><div class="fix"><span class="label">fix</span>Always fit preprocessing on training data only, then transform(X_test) -- never .fit_transform(X) before splitting. If using sklearn, wrap preprocessing inside a Pipeline and call .fit() on (X_train, y_train) only.</div></div><div class="finding warning"><div class="head"><h3><span class="code">TL006</span> &middot; Train/test distribution drift</h3><span class="badge">warning</span></div><div class="what"><span class="label">what</span>A feature&#39;s distribution differs sharply between train and test (KS&gt;=0.2 numeric, PSI&gt;=0.25 categorical). Your evaluation is measuring transfer, not generalization.</div><div class="what"><span class="label">detail</span>1 feature(s) drift between train and test (KS&gt;=0.2 numeric / PSI&gt;=0.25 categorical).</div><div class="fix"><span class="label">fix</span>Train and test should be drawn from the same distribution. If they&#39;re not, your evaluation is measuring transfer, not generalization. Re-shuffle, fix temporal leakage, or explicitly model distribution shift.</div><div class="cols"><span class="label">columns</span><code>timestamp</code></div></div><footer>Generated by dashml. One call: <code>dashml.check(X_train, y_train, X_test, y_test)</code></footer></body></html>
