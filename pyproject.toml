@@ -1,0 +1,40 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dashml"
+version = "0.3.0"
+description = "Lint for ML training pipelines: catch silent bugs (leakage, drift, schema mismatch) before they ruin your model."
+readme = "README.md"
+requires-python = ">=3.9"
+authors = [{ name = "Asmit Dash" }]
+license = { text = "MIT" }
+keywords = ["machine-learning", "data-validation", "leakage", "lint", "ml-ops"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "pandas>=1.5",
+    "numpy>=1.23",
+]
+
+[project.optional-dependencies]
+pdf = ["fpdf2>=2.7"]
+dev = ["pytest>=7", "scikit-learn>=1.2", "fpdf2>=2.7"]
+
+[project.urls]
+Homepage = "https://github.com/asmitdash/dashml"
+Issues = "https://github.com/asmitdash/dashml/issues"
+
+[tool.setuptools]
+py-modules = ["dashml"]
