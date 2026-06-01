@@ -1,4 +1,4 @@
-"""dashml v0.2 demo: time + group + preprocessing leakage on a real-shape problem.
+"""mldash v0.2 demo: time + group + preprocessing leakage on a real-shape problem.
 
 Synthetic but realistic: a fraud-detection-style stream of transactions.
 Each transaction belongs to a `user_id` and has a `timestamp`. The
@@ -12,7 +12,7 @@ We intentionally make THREE common mistakes in the naive pipeline:
     3. StandardScaler.fit(X)
        BEFORE the split            -> TL013 (preprocessing leakage)
 
-Then we re-run with dashml gating each stage. The dashml-gated pipeline
+Then we re-run with mldash gating each stage. The mldash-gated pipeline
 refuses to ship the model and tells the developer exactly what to fix.
 
 Run inside the bundled venv:
@@ -31,14 +31,14 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
-import dashml
+import mldash
 
 
 HERE = Path(__file__).resolve().parent
 REPORT_HTML = HERE / "sample_report.html"
 REPORT_PDF  = HERE / "sample_report.pdf"
 
-print(f"dashml version: {dashml.__version__}\n")
+print(f"mldash version: {mldash.__version__}\n")
 
 
 # ---------------------------------------------------------------------------
@@ -131,14 +131,14 @@ print()
 
 
 # ---------------------------------------------------------------------------
-# 3. dashml.check -- catch the leakage BEFORE training
+# 3. mldash.check -- catch the leakage BEFORE training
 # ---------------------------------------------------------------------------
 
 print("=" * 72)
-print("PIPELINE 2: DASHML -- run the linter first")
+print("PIPELINE 2: MLDASH -- run the linter first")
 print("=" * 72)
 
-report = dashml.check(
+report = mldash.check(
     X_train, y_train, X_test, y_test,
     time_col="timestamp",
     group_key="user_id",
@@ -152,11 +152,11 @@ print()
 # ---------------------------------------------------------------------------
 
 print("=" * 72)
-print("PIPELINE 3: dashml.audit_pipeline -- catch preprocessing leakage")
+print("PIPELINE 3: mldash.audit_pipeline -- catch preprocessing leakage")
 print("=" * 72)
 
 # Reconstruct what the developer "intended": a pipeline that scales then
-# trains. dashml.audit_pipeline takes the UNFITTED pipeline + raw X, y and
+# trains. mldash.audit_pipeline takes the UNFITTED pipeline + raw X, y and
 # detects that scaling the full dataset before splitting is data-leaky.
 candidate_pipe = Pipeline([
     ("scale", StandardScaler()),
@@ -164,7 +164,7 @@ candidate_pipe = Pipeline([
 ])
 
 X_for_audit = df[["amount", "hour", "day_of_wk"]]
-pipeline_report = dashml.audit_pipeline(candidate_pipe, X_for_audit, y)
+pipeline_report = mldash.audit_pipeline(candidate_pipe, X_for_audit, y)
 print(pipeline_report)
 print()
 
@@ -239,8 +239,8 @@ for k in ["accuracy", "f1", "roc_auc"]:
 print()
 
 # Combine check() and audit_pipeline() findings into one report doc
-combined = dashml.Report(findings=report.findings + pipeline_report.findings)
-title = "dashml v0.3 audit -- fraud detection (temporal + grouped)"
+combined = mldash.Report(findings=report.findings + pipeline_report.findings)
+title = "mldash v0.3 audit -- fraud detection (temporal + grouped)"
 dataset = f"Synthetic transactions, {N:,} rows / {N_USERS} users / 90 days"
 
 # HTML (browser-friendly, embeddable)
@@ -253,7 +253,7 @@ html = combined.to_html(
 REPORT_HTML.write_text(html, encoding="utf-8")
 print(f"Wrote HTML report: {REPORT_HTML}")
 
-# PDF (single-page audit doc -- requires `pip install dashml[pdf]`)
+# PDF (single-page audit doc -- requires `pip install mldash[pdf]`)
 combined.to_pdf(
     REPORT_PDF,
     title=title,

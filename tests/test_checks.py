@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-import dashml
+import mldash
 
 
 RNG = np.random.default_rng(42)
@@ -34,7 +34,7 @@ def _split(X: pd.DataFrame, y: pd.Series, frac: float = 0.7):
 def test_clean_dataset_has_no_critical():
     X, y = _clean_classification()
     Xtr, ytr, Xte, yte = _split(X, y)
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     assert report.ok(), f"clean dataset should not produce critical findings; got {report}"
 
 
@@ -46,7 +46,7 @@ def test_tl001_exact_duplicate_leakage():
     Xtr, ytr, Xte, yte = _split(X, y)
     Xte = pd.concat([Xte, Xtr.head(20)], ignore_index=True)
     yte = pd.concat([yte, ytr.head(20)], ignore_index=True)
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     codes = {f.code for f in report.findings}
     assert "TL001" in codes
 
@@ -59,7 +59,7 @@ def test_tl002_near_duplicates():
         perturbed[col] = perturbed[col] + 1e-7
     Xte = pd.concat([Xte, perturbed], ignore_index=True)
     yte = pd.concat([yte, ytr.head(20)], ignore_index=True)
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     codes = {f.code for f in report.findings}
     assert "TL002" in codes
 
@@ -71,7 +71,7 @@ def test_tl003_target_leakage_numeric():
     X, y = _clean_classification(n=400)
     X["leaky"] = y.values + RNG.normal(scale=0.001, size=len(y))
     Xtr, ytr, Xte, yte = _split(X, y)
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     crit_codes = {f.code for f in report.critical}
     assert "TL003" in crit_codes
     leak_finding = next(f for f in report.findings if f.code == "TL003" and f.severity.value == "critical")
@@ -82,7 +82,7 @@ def test_tl003_target_leakage_categorical():
     X, y = _clean_classification(n=400)
     X["leaky_cat"] = y.map({0: "neg", 1: "pos"})
     Xtr, ytr, Xte, yte = _split(X, y)
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     crit = [f for f in report.critical if f.code == "TL003"]
     assert crit, "expected critical TL003 for perfectly-encoded categorical"
     assert "leaky_cat" in crit[0].columns
@@ -96,7 +96,7 @@ def test_tl003_target_leakage_numeric_multiclass():
     y = pd.Series(RNG.integers(0, 7, size=n), name="y")  # 7 classes -- multiclass
     X["leaky_proxy"] = y.astype(float) + RNG.normal(0, 0.02, size=n)
     Xtr, ytr, Xte, yte = _split(X, y)
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     crit = [f for f in report.critical if f.code == "TL003"]
     assert crit, "expected critical TL003 for numeric near-proxy of multiclass y"
     assert "leaky_proxy" in crit[0].columns
@@ -109,7 +109,7 @@ def test_tl004_constant_feature():
     X, y = _clean_classification()
     X["dead"] = 7
     Xtr, ytr, Xte, yte = _split(X, y)
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     assert any(f.code == "TL004" for f in report.findings)
 
 
@@ -117,7 +117,7 @@ def test_tl005_duplicate_columns():
     X, y = _clean_classification()
     X["f0_copy"] = X["f0"]
     Xtr, ytr, Xte, yte = _split(X, y)
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     assert any(f.code == "TL005" for f in report.findings)
 
 
@@ -125,7 +125,7 @@ def test_tl010_id_like_feature():
     X, y = _clean_classification(n=500)
     X["row_id"] = np.arange(len(X))
     Xtr, ytr, Xte, yte = _split(X, y)
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     assert any(f.code == "TL010" for f in report.findings)
 
 
@@ -136,7 +136,7 @@ def test_tl006_drift():
     X, y = _clean_classification(n=600)
     Xtr, ytr, Xte, yte = _split(X, y)
     Xte["f0"] = Xte["f0"] + 5  # heavy shift
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     assert any(f.code == "TL006" for f in report.findings)
 
 
@@ -145,7 +145,7 @@ def test_tl008_missingness_mismatch():
     Xtr, ytr, Xte, yte = _split(X, y)
     mask = RNG.random(len(Xte)) < 0.4
     Xte.loc[mask, "f1"] = np.nan
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     assert any(f.code == "TL008" for f in report.findings)
 
 
@@ -158,7 +158,7 @@ def test_tl007_class_imbalance():
     y.iloc[:] = 0
     y.iloc[:5] = 1
     Xtr, ytr, Xte, yte = _split(X, y)
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     assert any(f.code == "TL007" for f in report.findings)
 
 
@@ -169,7 +169,7 @@ def test_tl009_schema_mismatch_columns():
     X, y = _clean_classification()
     Xtr, ytr, Xte, yte = _split(X, y)
     Xte = Xte.drop(columns=["f0"])
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     assert any(f.code == "TL009" and f.severity.value == "critical" for f in report.findings)
 
 
@@ -177,7 +177,7 @@ def test_tl009_schema_mismatch_dtype():
     X, y = _clean_classification()
     Xtr, ytr, Xte, yte = _split(X, y)
     Xte["f0"] = Xte["f0"].astype("float32")
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     assert any(f.code == "TL009" for f in report.findings)
 
 
@@ -187,8 +187,8 @@ def test_tl009_schema_mismatch_dtype():
 def test_accepts_numpy_arrays():
     X, y = _clean_classification()
     Xtr, ytr, Xte, yte = _split(X, y)
-    report = dashml.check(Xtr.to_numpy(), ytr.to_numpy(), Xte.to_numpy(), yte.to_numpy())
-    assert isinstance(report, dashml.Report)
+    report = mldash.check(Xtr.to_numpy(), ytr.to_numpy(), Xte.to_numpy(), yte.to_numpy())
+    assert isinstance(report, mldash.Report)
 
 
 def test_report_to_dict_serializable():
@@ -197,14 +197,14 @@ def test_report_to_dict_serializable():
     X, y = _clean_classification()
     X["dead"] = 1
     Xtr, ytr, Xte, yte = _split(X, y)
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     json.dumps(report.to_dict())  # raises if not serializable
 
 
 def test_length_mismatch_raises():
     X, y = _clean_classification()
     with pytest.raises(ValueError):
-        dashml.check(X, y.iloc[:-1])
+        mldash.check(X, y.iloc[:-1])
 
 
 def test_to_html_renders_self_contained_doc():
@@ -212,7 +212,7 @@ def test_to_html_renders_self_contained_doc():
     X["dead"] = 1
     X["leaky"] = y.values
     Xtr, ytr, Xte, yte = _split(X, y)
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     html = report.to_html(
         title="t",
         dataset_name="synthetic",
@@ -238,7 +238,7 @@ def test_tl003_info_tier_for_gray_zone():
     noise = RNG.normal(0, 0.7, size=n)
     X["partial"] = y.values.astype(float) + noise
     Xtr, ytr, Xte, yte = _split(X, y)
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     info_findings = [f for f in report.findings if f.code == "TL003" and f.severity.value == "info"]
     # At least one info-tier TL003 must fire (partial may bucket as warn or info
     # depending on sampled noise; this is the gray zone). What must NOT happen:
@@ -258,7 +258,7 @@ def test_tl011_temporal_overlap_critical():
     # Bad split: shuffled instead of chronological
     Xtr, ytr, Xte, yte = _split(X.sample(frac=1.0, random_state=1).reset_index(drop=True),
                                  y.sample(frac=1.0, random_state=1).reset_index(drop=True))
-    report = dashml.check(Xtr, ytr, Xte, yte, time_col="ts")
+    report = mldash.check(Xtr, ytr, Xte, yte, time_col="ts")
     temporal = [f for f in report.findings if f.code == "TL011"]
     assert temporal, "expected TL011 for shuffled time column"
     assert any(f.severity.value in ("critical", "warning") for f in temporal)
@@ -270,7 +270,7 @@ def test_tl011_clean_chronological_split_no_finding():
     X = pd.DataFrame({"ts": times, "f0": RNG.normal(size=n)})
     y = pd.Series((X["f0"] > 0).astype(int), name="y")
     Xtr, ytr, Xte, yte = _split(X, y)  # already chronological
-    report = dashml.check(Xtr, ytr, Xte, yte, time_col="ts")
+    report = mldash.check(Xtr, ytr, Xte, yte, time_col="ts")
     assert not [f for f in report.findings if f.code == "TL011"]
 
 
@@ -282,7 +282,7 @@ def test_tl011_suppresses_id_like_on_time_col():
     })
     y = pd.Series((X["f0"] > 0).astype(int), name="y")
     Xtr, ytr, Xte, yte = _split(X, y)
-    report = dashml.check(Xtr, ytr, Xte, yte, time_col="ts")
+    report = mldash.check(Xtr, ytr, Xte, yte, time_col="ts")
     assert not [f for f in report.findings if f.code == "TL010"]
 
 
@@ -297,7 +297,7 @@ def test_tl012_group_overlap_critical():
     # Random row split -- guaranteed to put same users in train and test
     Xtr, ytr, Xte, yte = _split(X.sample(frac=1.0, random_state=2).reset_index(drop=True),
                                  y.sample(frac=1.0, random_state=2).reset_index(drop=True))
-    report = dashml.check(Xtr, ytr, Xte, yte, group_key="user_id")
+    report = mldash.check(Xtr, ytr, Xte, yte, group_key="user_id")
     overlap = [f for f in report.findings if f.code == "TL012" and "overlapping" in f.details.get("n_overlapping_groups", "" ) .__str__()]
     findings = [f for f in report.findings if f.code == "TL012"]
     assert findings, "expected TL012 for row-level split with shared groups"
@@ -312,7 +312,7 @@ def test_tl012_clean_group_split_no_overlap_finding():
     train_mask = X["user_id"] < 32
     Xtr, ytr = X[train_mask].reset_index(drop=True), y[train_mask].reset_index(drop=True)
     Xte, yte = X[~train_mask].reset_index(drop=True), y[~train_mask].reset_index(drop=True)
-    report = dashml.check(Xtr, ytr, Xte, yte, group_key="user_id")
+    report = mldash.check(Xtr, ytr, Xte, yte, group_key="user_id")
     overlap_findings = [
         f for f in report.findings
         if f.code == "TL012" and "appear in both" in f.message
@@ -333,9 +333,9 @@ def test_tl013_scaler_fit_on_full_data_detected():
     y = pd.Series((X["f0"] > 0).astype(int), name="y")
 
     pipe = Pipeline([("scaler", StandardScaler())])
-    report = dashml.audit_pipeline(pipe, X, y)
+    report = mldash.audit_pipeline(pipe, X, y)
     # StandardScaler fit on full vs train will produce different scaling stats
-    # for X_test transforms. dashml should detect this as critical TL013.
+    # for X_test transforms. mldash should detect this as critical TL013.
     crit = [f for f in report.findings if f.code == "TL013" and f.severity.value == "critical"]
     assert crit, f"expected critical TL013 for StandardScaler, got {[str(f) for f in report.findings]}"
 
@@ -350,7 +350,7 @@ def test_audit_pipeline_clean_when_no_data_dependent_state():
     # FunctionTransformer with no state -- transform output is identical
     # regardless of fit data.
     pipe = FunctionTransformer(lambda x: x * 2.0, validate=False)
-    report = dashml.audit_pipeline(pipe, X, y)
+    report = mldash.audit_pipeline(pipe, X, y)
     crit = [f for f in report.findings if f.code == "TL013" and f.severity.value == "critical"]
     assert not crit, f"stateless transformer should not trigger TL013, got {crit}"
 
@@ -364,7 +364,7 @@ def test_to_pdf_writes_valid_pdf(tmp_path):
     X["dead"] = 1
     X["leaky"] = y.values
     Xtr, ytr, Xte, yte = _split(X, y)
-    report = dashml.check(Xtr, ytr, Xte, yte)
+    report = mldash.check(Xtr, ytr, Xte, yte)
     out = tmp_path / "r.pdf"
     written = report.to_pdf(
         out,
@@ -393,8 +393,8 @@ def test_to_pdf_raises_clear_error_without_fpdf2(monkeypatch):
     monkeypatch.setattr(builtins, "__import__", fake_import)
     X, y = _clean_classification(n=100)
     Xtr, ytr, Xte, yte = _split(X, y)
-    report = dashml.check(Xtr, ytr, Xte, yte)
-    with pytest.raises(ImportError, match=r"pip install dashml\[pdf\]"):
+    report = mldash.check(Xtr, ytr, Xte, yte)
+    with pytest.raises(ImportError, match=r"pip install mldash\[pdf\]"):
         report.to_pdf("/tmp/should_not_be_written.pdf")
 
 
@@ -408,6 +408,6 @@ def test_to_html_includes_new_codes():
     y = pd.Series((X["f0"] > 0).astype(int), name="y")
     Xtr, ytr, Xte, yte = _split(X.sample(frac=1.0, random_state=3).reset_index(drop=True),
                                  y.sample(frac=1.0, random_state=3).reset_index(drop=True))
-    report = dashml.check(Xtr, ytr, Xte, yte, time_col="ts", group_key="user_id")
+    report = mldash.check(Xtr, ytr, Xte, yte, time_col="ts", group_key="user_id")
     html = report.to_html(title="t")
     assert "TL011" in html or "TL012" in html, "expected TL011 or TL012 in HTML report"

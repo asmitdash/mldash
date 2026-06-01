@@ -1,23 +1,23 @@
-# dashml
+# mldash
 
 **Lint for ML training pipelines.** One import, one call, one PDF report — catch the silent bugs that ruin models in production *before* you ship them.
 
 ```bash
-pip install dashml          # core (pandas + numpy)
-pip install dashml[pdf]     # adds PDF report support (fpdf2)
+pip install mldash          # core (pandas + numpy)
+pip install mldash[pdf]     # adds PDF report support (fpdf2)
 ```
 
 ```python
-import dashml
+import mldash
 
-report = dashml.check(X_train, y_train, X_test=X_test, y_test=y_test)
+report = mldash.check(X_train, y_train, X_test=X_test, y_test=y_test)
 print(report)
 
 if not report.ok():
     raise SystemExit("Fix the critical issues before training.")
 ```
 
-That's the whole API. Pandas DataFrames, NumPy arrays, dicts, and lists all work as inputs. dashml does **not** train any model — it's deterministic, runs in seconds, and depends only on `pandas` + `numpy` (PDF output is an optional extra).
+That's the whole API. Pandas DataFrames, NumPy arrays, dicts, and lists all work as inputs. mldash does **not** train any model — it's deterministic, runs in seconds, and depends only on `pandas` + `numpy` (PDF output is an optional extra).
 
 ---
 
@@ -25,7 +25,7 @@ That's the whole API. Pandas DataFrames, NumPy arrays, dicts, and lists all work
 
 Every ML pipeline has small mistakes that go unnoticed: a column derived from the label sneaks in, the test set was sampled before the split was made, two columns are byte-identical, the same user appears in train and test. Each one looks fine in code review and silently inflates your accuracy. Then production happens.
 
-**dashml catches those mistakes before they break your pipeline.** It's a static-analysis layer for training data — the way `eslint` is for JavaScript.
+**mldash catches those mistakes before they break your pipeline.** It's a static-analysis layer for training data — the way `eslint` is for JavaScript.
 
 It's deliberately scoped: only training-data and pipeline integrity. It doesn't train models, tune hyperparameters, or visualize distributions — pandas, sklearn, and ydata-profiling already do those things well.
 
@@ -64,11 +64,11 @@ The big-deal bugs in production ML aren't algorithm bugs. They're data hygiene b
 - The test set was shuffled across time. Your "evaluation" is measuring transfer, not skill.
 - `StandardScaler.fit_transform(X)` was called *before* the train/test split. Test statistics leaked into training.
 
-`dashml.check(...)` is a single call that catches these before training, with concrete fixes.
+`mldash.check(...)` is a single call that catches these before training, with concrete fixes.
 
 ---
 
-## Demo: with vs without dashml
+## Demo: with vs without mldash
 
 The repo ships [`examples/demo.py`](examples/demo.py) — a synthetic fraud-detection dataset (8 000 transactions, 600 users, 90-day window) with **three mistakes** baked into the naive pipeline:
 
@@ -81,19 +81,19 @@ Run it:
 ```bash
 cd examples
 pip install -r requirements.txt
-pip install dashml[pdf]
+pip install mldash[pdf]
 python demo.py
 ```
 
 You get this verdict:
 
-| Metric | Naive (3 bugs) | Honest (dashml-cleaned) | Inflation |
+| Metric | Naive (3 bugs) | Honest (mldash-cleaned) | Inflation |
 |---|---|---|---|
 | accuracy | **0.8717** | 0.8495 | +0.0222 |
 | f1 | **0.6805** | 0.6569 | +0.0236 |
 | roc_auc | **0.9065** | 0.8959 | +0.0106 |
 
-The naive numbers look fine. They're not — they're the score of a model that's secretly cheating. dashml flags all three bugs as **critical** and refuses to ok() the run.
+The naive numbers look fine. They're not — they're the score of a model that's secretly cheating. mldash flags all three bugs as **critical** and refuses to ok() the run.
 
 The demo also writes a single audit document — see [`examples/sample_report.pdf`](examples/sample_report.pdf) and [`examples/sample_report.html`](examples/sample_report.html) for what the output looks like.
 
@@ -102,7 +102,7 @@ The demo also writes a single audit document — see [`examples/sample_report.pd
 ## Generate a PDF / HTML audit report
 
 ```python
-report = dashml.check(
+report = mldash.check(
     X_train, y_train, X_test, y_test,
     time_col="timestamp",        # enables TL011 (temporal leakage)
     group_key="user_id",         # enables TL012 (group leakage)
@@ -110,7 +110,7 @@ report = dashml.check(
 
 report.to_pdf(
     "audit.pdf",
-    title="dashml audit -- fraud model v3",
+    title="mldash audit -- fraud model v3",
     dataset_name="transactions Q1 2024",
     metrics_before={"accuracy": 0.8717, "f1": 0.6805, "roc_auc": 0.9065},
     metrics_after ={"accuracy": 0.8495, "f1": 0.6569, "roc_auc": 0.8959},
@@ -126,20 +126,20 @@ The report contains: pass/fail banner, summary cards, performance comparison wit
 
 ## Audit a sklearn pipeline
 
-`dashml.check()` looks at data. `dashml.audit_pipeline()` looks at code:
+`mldash.check()` looks at data. `mldash.audit_pipeline()` looks at code:
 
 ```python
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.ensemble import GradientBoostingClassifier
-import dashml
+import mldash
 
 candidate = Pipeline([
     ("scale", StandardScaler()),
     ("clf",   GradientBoostingClassifier(random_state=42)),
 ])
 
-report = dashml.audit_pipeline(candidate, X, y)   # raw, unsplit X, y
+report = mldash.audit_pipeline(candidate, X, y)   # raw, unsplit X, y
 print(report)
 ```
 
@@ -152,7 +152,7 @@ It also flags target-aware encoders (`TargetEncoder`, `CatBoostEncoder`, etc.) a
 ## API reference
 
 ```python
-dashml.check(
+mldash.check(
     X_train, y_train,
     X_test=None, y_test=None,
     *,
@@ -162,7 +162,7 @@ dashml.check(
     group_key_test=None,              # defaults to group_key when it's a string
 ) -> Report
 
-dashml.audit_pipeline(
+mldash.audit_pipeline(
     pipeline, X, y,
     *,
     task="auto",
@@ -179,7 +179,7 @@ dashml.audit_pipeline(
 - `print(report)` — human-readable terminal summary.
 - `report.to_dict()` — JSON-serializable dict (good for CI logs / artifacts).
 - `report.to_html(...)` — single-page self-contained HTML.
-- `report.to_pdf(path, ...)` — single audit document. Requires `dashml[pdf]`.
+- `report.to_pdf(path, ...)` — single audit document. Requires `mldash[pdf]`.
 
 Each `Finding` has: `code`, `severity` (`critical` / `warning` / `info`), `message`, `fix`, `columns`, `details`.
 
@@ -188,9 +188,9 @@ Each `Finding` has: `code`, `severity` (`critical` / `warning` / `info`), `messa
 ## Use it in CI
 
 ```python
-import dashml, sys
+import mldash, sys
 
-report = dashml.check(X_train, y_train, X_test, y_test,
+report = mldash.check(X_train, y_train, X_test, y_test,
                      time_col="timestamp", group_key="user_id")
 report.to_pdf("audit.pdf", title="CI audit")   # optional artifact
 sys.exit(0 if report.ok() else 1)
@@ -202,7 +202,7 @@ A failed `report.ok()` blocks the merge. The PDF / HTML can be uploaded as a CI 
 
 ## Scope, on purpose
 
-dashml is **only** a linter for training-data and pipeline-integrity bugs. It doesn't:
+mldash is **only** a linter for training-data and pipeline-integrity bugs. It doesn't:
 
 - train models (use sklearn / lightning / xgboost),
 - tune hyperparameters (use Optuna / Ray Tune),
@@ -210,15 +210,15 @@ dashml is **only** a linter for training-data and pipeline-integrity bugs. It do
 - profile data (use ydata-profiling / sweetviz),
 - explain predictions (use SHAP / lime).
 
-Doing one thing well is the point. If `dashml.check()` returns clean, you can trust your pipeline isn't silently broken — and that's all it claims to do.
+Doing one thing well is the point. If `mldash.check()` returns clean, you can trust your pipeline isn't silently broken — and that's all it claims to do.
 
 ---
 
 ## Development
 
 ```bash
-git clone https://github.com/<your-username>/dashml
-cd dashml
+git clone https://github.com/<your-username>/mldash
+cd mldash
 pip install -e ".[dev]"
 pytest                        # 29 tests, ~3 seconds
 ```

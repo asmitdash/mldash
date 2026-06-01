@@ -1,4 +1,4 @@
 pandas>=1.5
 numpy>=1.23
 scikit-learn>=1.2
-# dashml is installed from the sibling ../dashml folder by run.sh / run.bat
+# mldash is installed from the sibling ../mldash folder by run.sh / run.bat
