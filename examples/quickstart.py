@@ -1,6 +1,6 @@
-"""mldash in 20 lines.
+"""dash_mlguard in 20 lines.
 
-Plants three classic bugs in synthetic data, runs mldash.check, and prints
+Plants three classic bugs in synthetic data, runs dash_mlguard.check, and prints
 the report. For the full walk-through with metrics + PDF/HTML output, see
 demo.py.
 """
@@ -10,7 +10,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 
-import mldash
+import dash_mlguard
 
 rng = np.random.default_rng(0)
 n = 800
@@ -29,6 +29,6 @@ split = int(n * 0.7)
 X_train, X_test = X.iloc[:split], X.iloc[split:]
 y_train, y_test = y.iloc[:split], y.iloc[split:]
 
-report = mldash.check(X_train, y_train, X_test, y_test)
+report = dash_mlguard.check(X_train, y_train, X_test, y_test)
 print(report)
 print("\nready to ship?", report.ok())

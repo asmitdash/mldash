@@ -1,4 +1,4 @@
 pandas>=1.5
 numpy>=1.23
 scikit-learn>=1.2
-# mldash is installed from the sibling ../mldash folder by run.sh / run.bat
+# dash_mlguard is installed from the sibling ../dash_mlguard folder by run.sh / run.bat
